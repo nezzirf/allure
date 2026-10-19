@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Allure, le calculateur de course</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%232338ff'/><text x='50%' y='55%' dominant-baseline='central' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-weight='800' font-size='320'>A</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%232338ff'/><text x='50%' y='55%' dominant-baseline='central' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-weight='800' font-size='320'>A</text></svg>">
+<meta name="description" content="Calcule ton temps, ton allure (min/km), ta vitesse (km/h) ou ta distance en renseignant deux valeurs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f3f4fb;--ink:#0d1135;--mut:#555c85;--line:rgba(13,17,53,.15);
+--pn:#2338ff;--pk:#fff;--pm:rgba(255,255,255,.78);--pl:rgba(255,255,255,.26);--hi:#ffe14a;--hk:#0d1135;
+--d:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--b:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#080a22;--ink:#eceeff;--mut:#9ea5d2;--line:rgba(236,238,255,.18);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#080a22;--ink:#eceeff;--mut:#9ea5d2;--line:rgba(236,238,255,.18);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 var(--b)}
+.w{max-width:860px;margin:0 auto;padding:0 20px 40px}
+header{padding:22px 0 8px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px}
+.tab{font:600 .9rem var(--b);color:var(--mut);background:transparent;border:0;border-radius:999px;padding:8px 18px;cursor:pointer;transition:background .15s,color .15s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--pn);color:var(--pk)}
+.tab:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.grid.g3{grid-template-columns:1fr}
+.g3 .f:nth-child(even){border-left:0}
+@media (min-width:640px){.grid.g3{grid-template-columns:repeat(3,1fr)}.g3 .f+.f{border-left:1px solid var(--pl)}}
+.brand{font:800 1.8rem/1 var(--d);color:var(--ink);text-decoration:none;letter-spacing:.01em}
+h1{font:800 clamp(2.8rem,9.5vw,5.4rem)/.95 var(--d);margin:26px 0 14px;max-width:13ch}
+.lead{color:var(--mut);max-width:52ch;margin:0 0 28px;font-size:1.05rem}
+.panel{background:repeating-linear-gradient(to bottom,transparent 0 51px,rgba(255,255,255,.08) 51px 53px),var(--pn);color:var(--pk);border-radius:28px;padding:18px 0 16px;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 18px}
+.chip,.ghost{font:600 .88rem var(--b);color:var(--pk);background:transparent;border:1.5px solid var(--pl);border-radius:999px;padding:7px 14px;cursor:pointer;transition:background .15s,color .15s}
+.chip:hover,.ghost:hover{background:var(--pk);color:var(--pn)}
+.chip:focus-visible,.ghost:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr}
+.f{padding:16px 18px 14px;border-top:1px solid var(--pl);min-width:0;transition:background .2s}
+.f:nth-child(even){border-left:1px solid var(--pl)}
+.f:focus-within{box-shadow:inset 0 0 0 3px var(--pk)}
+.f.calc{background:var(--hi);color:var(--hk)}
+.f.calc:focus-within{box-shadow:inset 0 0 0 3px var(--hk)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px}
+label{font-weight:700;font-size:.92rem}
+label span{font-weight:500;opacity:.75;margin-left:4px}
+.tag{display:none;font-style:normal;font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 9px}
+.f.calc .tag{display:inline-block;background:var(--hk);color:var(--hi)}
+.f.calc .tag::after{content:"calculé"}
+.f.mirror .tag{display:inline-block;border:1px solid var(--pl);color:var(--pm)}
+.f.mirror .tag::after{content:"équivalent"}
+input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:inherit;font:800 clamp(2.4rem,10.5vw,3.9rem)/1.1 var(--d);font-variant-numeric:tabular-nums;padding:4px 0 2px}
+input::placeholder{color:currentColor;opacity:.3}
+.sub{font-size:.8rem;color:var(--pm);min-height:1.3em}
+.f.calc .sub{color:var(--hk)}
+.val{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+.val input{flex:1 1 5ch;min-width:5ch}
+.adj{flex:none;font:700 1.35rem/1 var(--d);font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap}
+.temp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:14px 18px;border-top:1px solid var(--pl)}
+.temp label{flex:none}
+.tin{flex:none;width:4.6ch;font-size:2rem}
+input[type=range]{flex:1 1 160px;min-width:0;width:auto;height:28px;padding:0;font:inherit;accent-color:var(--hi);cursor:pointer}
+.temp p{flex-basis:100%;margin:0;font-size:.8rem;color:var(--pm)}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px 0;border-top:1px solid var(--pl);font-size:.92rem;color:var(--pm)}
+.bar p{margin:0}
+.ghost{flex:none;font-size:.85rem;padding:6px 14px}
+h2{font:700 1.8rem/1.1 var(--d);margin:44px 0 8px}
+.rows{border-top:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+.row span{color:var(--mut);font-weight:500}
+.row b{font:800 2.1rem/1 var(--d);font-variant-numeric:tabular-nums}
+.row .adj{margin-left:auto}
+footer{margin-top:36px;color:var(--mut);font-size:.88rem;max-width:60ch}
+</style>
+</head>
+<body>
+<div class="w">
+<header>
+<a class="brand" href="#" style="display: inline-flex; align-items: center; gap: 10px;">
+    <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: var(--pn); color: #fff; border-radius: 8px; font-family: var(--d); font-size: 1.5rem; font-weight: 800; line-height: 1;">A</span>
+    <span>Allure</span>
+  </a>
+</header>
+<main>
+<div id="p-run" role="tabpanel" aria-labelledby="tb-run">
+<h1>Donne deux chiffres, on calcule le troisième.</h1>
+<p class="lead">Distance, temps, allure ou vitesse : remplis deux champs et le reste s’affiche tout de suite. Sans inscription.</p>
+
+<section class="panel" aria-label="Calculateur">
+  <div class="chips" role="group" aria-label="Distances courantes">
+    <button class="chip" type="button" data-km="5">5 km</button>
+    <button class="chip" type="button" data-km="10">10 km</button>
+    <button class="chip" type="button" data-km="21,0975">Semi-marathon</button>
+    <button class="chip" type="button" data-km="42,195">Marathon</button>
+  </div>
+  <div class="grid">
+    <div class="f"><div class="top"><label for="d">Distance<span>km</span></label><i class="tag"></i></div>
+      <input id="d" inputmode="decimal" autocomplete="off" placeholder="10"><div class="sub">ex. 10 ou 21,1</div></div>
+    <div class="f"><div class="top"><label for="t">Temps<span>min</span></label><i class="tag"></i></div>
+      <div class="val"><input id="t" inputmode="decimal" autocomplete="off" placeholder="50"><small class="adj" id="ta"></small></div><div class="sub" id="hms">ex. 52,5 ou 52:30</div></div>
+    <div class="f"><div class="top"><label for="p">Allure<span>min/km</span></label><i class="tag"></i></div>
+      <div class="val"><input id="p" autocomplete="off" placeholder="5:00"><small class="adj" id="pa"></small></div><div class="sub" id="sp">ex. 5:15 ou 5,25</div></div>
+    <div class="f"><div class="top"><label for="s">Vitesse<span>km/h</span></label><i class="tag"></i></div>
+      <div class="val"><input id="s" inputmode="decimal" autocomplete="off" placeholder="12"><small class="adj" id="sa"></small></div><div class="sub" id="ss">ex. 11,5</div></div>
+  </div>
+  <div class="temp"><label for="c">Température<span>°C</span></label>
+    <input id="c" class="tin" autocomplete="off" placeholder="20">
+    <input id="cs" type="range" min="-10" max="40" step="1" value="15" aria-label="Température extérieure en degrés Celsius">
+    <p>Facultatif : indique la température et l’allure, le temps et les temps de passage s’ajustent, affichés en petit à côté des valeurs de base.</p></div>
+  <div class="bar"><p id="st" aria-live="polite">Remplis deux champs, le troisième se calcule.</p><button class="ghost" id="rs" type="button">Effacer</button></div>
+</section>
+
+<section>
+  <h2>Tes temps à cette allure</h2>
+  <div class="rows">
+    <div class="row"><span>5 km</span><small class="adj" data-ka="5"></small><b data-km="5">–</b></div>
+    <div class="row"><span>10 km</span><small class="adj" data-ka="10"></small><b data-km="10">–</b></div>
+    <div class="row"><span>Semi-marathon</span><small class="adj" data-ka="21.0975"></small><b data-km="21.0975">–</b></div>
+    <div class="row"><span>Marathon</span><small class="adj" data-ka="42.195"></small><b data-km="42.195">–</b></div>
+  </div>
+</section>
+</div>
+
+<div id="p-pw" role="tabpanel" aria-labelledby="tb-pw" hidden>
+<h1>Ta puissance rapportée à ton poids.</h1>
+<p class="lead">Les watts par kilo permettent de comparer des cyclistes de poids différents, surtout en montée. Remplis deux champs, le troisième se calcule tout seul.</p>
+<section class="panel" aria-label="Calculateur de watts par kilo">
+  <div class="chips" role="group" aria-label="Objectifs courants">
+    <button class="chip" type="button" data-wk="2">2 W/kg</button>
+    <button class="chip" type="button" data-wk="3">3 W/kg</button>
+    <button class="chip" type="button" data-wk="4">4 W/kg</button>
+    <button class="chip" type="button" data-wk="5">5 W/kg</button>
+  </div>
+  <div class="grid g3">
+    <div class="f"><div class="top"><label for="w">Poids<span>kg</span></label><i class="tag"></i></div>
+      <input id="w" inputmode="decimal" autocomplete="off" placeholder="70"><div class="sub">ex. 72,5</div></div>
+    <div class="f"><div class="top"><label for="pw">Puissance<span>W</span></label><i class="tag"></i></div>
+      <input id="pw" inputmode="decimal" autocomplete="off" placeholder="250"><div class="sub">ex. 250</div></div>
+    <div class="f"><div class="top"><label for="wk">Watts par kilo<span>W/kg</span></label><i class="tag"></i></div>
+      <input id="wk" inputmode="decimal" autocomplete="off" placeholder="3,5"><div class="sub">ex. 3,5</div></div>
+  </div>
+  <div class="bar"><p id="qst" aria-live="polite">Remplis deux champs, le troisième se calcule.</p><button class="ghost" id="qrs" type="button">Effacer</button></div>
+</section>
+<footer>Calcul : W/kg = puissance (W) ÷ poids (kg). Pour comparer tes sorties dans le temps, garde toujours la même façon de te peser.</footer>
+</div>
+<div id="p-sw" role="tabpanel" aria-labelledby="tb-sw" hidden>
+<h1>Ton rythme au 100 mètres.</h1>
+<p class="lead">Renseigne deux valeurs parmi la distance, le temps et l’allure en minutes pour 100 m : la troisième se calcule toute seule.</p>
+<section class="panel" aria-label="Calculateur de natation">
+  <div class="chips" role="group" aria-label="Distances courantes">
+    <button class="chip" type="button" data-m="400">400 m</button>
+    <button class="chip" type="button" data-m="750">750 m</button>
+    <button class="chip" type="button" data-m="1500">1 500 m</button>
+    <button class="chip" type="button" data-m="1900">1 900 m</button>
+    <button class="chip" type="button" data-m="3800">3 800 m</button>
+  </div>
+  <div class="grid g3">
+    <div class="f"><div class="top"><label for="swd">Distance<span>m</span></label><i class="tag"></i></div>
+      <input id="swd" inputmode="decimal" autocomplete="off" placeholder="1500"><div class="sub">ex. 1500</div></div>
+    <div class="f"><div class="top"><label for="swt">Temps<span>min</span></label><i class="tag"></i></div>
+      <input id="swt" autocomplete="off" placeholder="30:00"><div class="sub" id="swh">ex. 32:30 ou 32,5</div></div>
+    <div class="f"><div class="top"><label for="swr">Allure<span>min/100 m</span></label><i class="tag"></i></div>
+      <input id="swr" autocomplete="off" placeholder="1:40"><div class="sub" id="swp">ex. 1:35 ou 1,58</div></div>
+  </div>
+  <div class="bar"><p id="swst" aria-live="polite">Remplis deux champs, le troisième se calcule.</p><button class="ghost" id="swrs" type="button">Effacer</button></div>
+</section>
+<section>
+  <h2>Tes temps à cette allure</h2>
+  <div class="rows">
+    <div class="row"><span>100 m</span><b data-sm="100">–</b></div>
+    <div class="row"><span>400 m</span><b data-sm="400">–</b></div>
+    <div class="row"><span>750 m</span><b data-sm="750">–</b></div>
+    <div class="row"><span>1 500 m</span><b data-sm="1500">–</b></div>
+    <div class="row"><span>1 900 m</span><b data-sm="1900">–</b></div>
+    <div class="row"><span>3 800 m</span><b data-sm="3800">–</b></div>
+  </div>
+</section>
+<footer>Calcul : allure = temps ÷ distance × 100. Tu peux écrire l’allure en minutes:secondes (1:35) ou en minutes décimales (1,58), et le temps en minutes (32,5) ou en 32:30.</footer>
+</div>
+</main>
+<footer id="ft">Calcul : distance = vitesse × temps. Pour le temps, tu peux écrire des minutes (52,5) ou du 52:30, et 1:05:30 pour les heures. Les résultats sont arrondis à l’affichage. L’ajustement à la température est une estimation d’après des tables d’ajustement courantes : l’humidité, le vent et le soleil comptent aussi, et il vaut mieux partir prudemment quand il fait chaud.</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),F={d:$('d'),t:$('t'),p:$('p'),s:$('s')},own={d:'d',t:'t',p:'r',s:'r'};
+let v={d:null,t:null,r:null},order=[],S='p';
+const dec=x=>{x=String(x).trim().replace(',','.');return /^(\d+\.?\d*|\.\d+)$/.test(x)&&+x>0?+x:null};
+const clock=x=>{x=String(x).trim().replace(',','.');if(!x.includes(':'))return dec(x);const a=x.split(':');if(a.length>3||a.some(q=>!/^\d+(\.\d+)?$/.test(q.trim())))return null;const n=a.map(Number),m=n.length===2?n[0]+n[1]/60:n[0]*60+n[1]+n[2]/60;return m>0?m:null};
+const f=(x,n)=>x.toLocaleString('fr-FR',{maximumFractionDigits:n,useGrouping:false});
+const pad=n=>String(n).padStart(2,'0');
+const fmt={d:x=>f(x,2),t:x=>f(x,2),p:x=>{const s=Math.round(x*60);return Math.floor(s/60)+':'+pad(s%60)},s:x=>f(60/x,2)};
+const clk=m=>{let s=Math.round(m*60);const h=Math.floor(s/3600);s%=3600;return(h?h+':'+pad(Math.floor(s/60)):Math.floor(s/60))+':'+pad(s%60)};
+const words=m=>{let s=Math.round(m*60);const h=Math.floor(s/3600);s%=3600;return(h?h+' h ':'')+Math.floor(s/60)+' min '+pad(s%60)+' s'};
+let RATE=null,TIME=null;
+const PTS=[[-10,2],[-5,1],[0,.5],[5,0],[12,0],[15,.5],[18,2],[21,4],[24,6.5],[27,10],[30,16],[35,25],[40,35]];
+const slow=c=>{if(c<=PTS[0][0])return PTS[0][1];for(let i=1;i<PTS.length;i++){const[a,x]=PTS[i-1],[b,y]=PTS[i];if(c<=b)return x+(y-x)*(c-a)/(b-a)}return PTS[PTS.length-1][1]};
+const temp=()=>{const x=String($('c').value).trim().replace(',','.');return /^-?\d+(\.\d+)?$/.test(x)?+x:null};
+function adjust(){
+  const c=temp(),pct=c==null?0:slow(c),on=!!RATE&&c!=null&&pct>0.05,r2=on?RATE*(1+pct/100):0;
+  const t2=on&&TIME?TIME*(1+pct/100):0;
+  $('ta').textContent=t2?'≈ '+fmt.t(t2):'';
+  $('hms').textContent=TIME?(t2?'Ajusté pour '+f(c,1)+' °C : '+words(t2):words(TIME)):'ex. 52,5 ou 52:30';
+  document.querySelectorAll('small[data-ka]').forEach(s=>s.textContent=on?clk(s.dataset.ka*r2):'');
+  $('pa').textContent=on?'≈ '+fmt.p(r2):'';
+  $('sa').textContent=on?'≈ '+fmt.s(r2):'';
+  $('sp').textContent=on?'Ajusté pour '+f(c,1)+' °C (+'+f(pct,1)+' %)':RATE&&c!=null?'Pas d’ajustement à '+f(c,1)+' °C':'ex. 5:15 ou 5,25';
+  $('ss').textContent=on?'Ajusté pour '+f(c,1)+' °C':RATE&&c!=null?'Pas d’ajustement à '+f(c,1)+' °C':'ex. 11,5';
+}
+const msg={d:'La distance est calculée.',t:'Le temps est calculé.',r:'L’allure et la vitesse sont calculées.'};
+
+function touch(k,x){order=order.filter(o=>o!==k);if(x!=null)order.unshift(k);order.length=Math.min(order.length,3)}
+function edit(k){
+  const r=F[k].value;
+  if(k==='d'){v.d=dec(r);touch('d',v.d)}
+  else if(k==='t'){v.t=clock(r);touch('t',v.t)}
+  else{const x=k==='p'?clock(r):dec(r);v.r=x&&(k==='p'?x:60/x);S=k;touch('r',v.r)}
+  calc(k);
+}
+function calc(active){
+  const inp=order.slice(0,2);let out=null;
+  if(inp.length===2){
+    out=['d','t','r'].find(k=>!inp.includes(k));
+    if(out==='t')v.t=v.d*v.r;else if(out==='d')v.d=v.t/v.r;else v.r=v.t/v.d;
+  }
+  for(const k in F){
+    const o=own[k],inI=inp.includes(o),typed=inI&&(o!=='r'||k===S),box=F[k].closest('.f');
+    box.classList.toggle('calc',o===out);
+    box.classList.toggle('mirror',inI&&!typed);
+    if(k===active||typed)continue;
+    F[k].value=(o===out||inI)?fmt[k](v[o]):'';
+  }
+  const rate=RATE=inp.length===2?v.r:null;
+  document.querySelectorAll('b[data-km]').forEach(b=>b.textContent=rate?clk(b.dataset.km*rate):'–');
+  TIME=((inp.includes('t')||out==='t')&&v.t)?v.t:null;
+  adjust();
+  $('st').textContent=out?msg[out]:inp.length===1?'Encore un champ à remplir…':'Remplis deux champs, le troisième se calcule.';
+}
+for(const k in F)F[k].addEventListener('input',()=>edit(k));
+document.querySelectorAll('.chip[data-km]').forEach(b=>b.addEventListener('click',()=>{F.d.value=b.dataset.km;edit('d')}));
+$('c').addEventListener('input',()=>{const x=temp();if(x!=null)$('cs').value=Math.max(-10,Math.min(40,x));adjust()});
+$('cs').addEventListener('input',()=>{$('c').value=$('cs').value;adjust()});
+$('rs').addEventListener('click',()=>{order=[];v={d:null,t:null,r:null};for(const k in F)F[k].value='';$('c').value='';$('cs').value=15;calc(null)});
+const Q={w:$('w'),p:$('pw'),r:$('wk')},qf={w:x=>f(x,1),p:x=>f(x,0),r:x=>f(x,2)},qm={w:'Le poids est calculé.',p:'La puissance est calculée.',r:'Les watts par kilo sont calculés.'};
+let qv={w:null,p:null,r:null},qo=[];
+function qcalc(active){
+  const inp=qo.slice(0,2);let out=null;
+  if(inp.length===2){
+    out=['w','p','r'].find(k=>!inp.includes(k));
+    if(out==='p')qv.p=qv.r*qv.w;else if(out==='w')qv.w=qv.p/qv.r;else qv.r=qv.p/qv.w;
+  }
+  for(const k in Q){
+    Q[k].closest('.f').classList.toggle('calc',k===out);
+    if(k===active||inp.includes(k))continue;
+    Q[k].value=k===out?qf[k](qv[k]):'';
+  }
+  $('qst').textContent=out?qm[out]:inp.length===1?'Encore un champ à remplir…':'Remplis deux champs, le troisième se calcule.';
+}
+function qedit(k){qv[k]=dec(Q[k].value);qo=qo.filter(o=>o!==k);if(qv[k]!=null)qo.unshift(k);qo.length=Math.min(qo.length,3);qcalc(k)}
+for(const k in Q)Q[k].addEventListener('input',()=>qedit(k));
+document.querySelectorAll('.chip[data-wk]').forEach(b=>b.addEventListener('click',()=>{Q.r.value=b.dataset.wk;qedit('r')}));
+$('qrs').addEventListener('click',()=>{qo=[];qv={w:null,p:null,r:null};for(const k in Q)Q[k].value='';qcalc(null)});
+
+const Wf={d:$('swd'),t:$('swt'),r:$('swr')},wfmt={d:x=>f(x,0),t:x=>clk(x/60),r:x=>clk(x/60)},wm={d:'La distance est calculée.',t:'Le temps est calculé.',r:'L’allure est calculée.'},sec=x=>x==null?null:x*60;
+let wv={d:null,t:null,r:null},wo=[];
+function wcalc(active){
+  const inp=wo.slice(0,2);let out=null;
+  if(inp.length===2){
+    out=['d','t','r'].find(k=>!inp.includes(k));
+    if(out==='t')wv.t=wv.d/100*wv.r;else if(out==='d')wv.d=wv.t/wv.r*100;else wv.r=wv.t/wv.d*100;
+  }
+  for(const k in Wf){
+    Wf[k].closest('.f').classList.toggle('calc',k===out);
+    if(k===active||inp.includes(k))continue;
+    Wf[k].value=k===out?wfmt[k](wv[k]):'';
+  }
+  const rate=inp.length===2?wv.r:null,rk=inp.includes('r')||out==='r',tk=inp.includes('t')||out==='t';
+  document.querySelectorAll('b[data-sm]').forEach(b=>b.textContent=rate?clk(b.dataset.sm/100*rate/60):'–');
+  $('swp').textContent=rk&&wv.r?'= '+f(wv.r,0)+' s pour 100 m':'ex. 1:35 ou 1,58';
+  $('swh').textContent=tk&&wv.t?'= '+words(wv.t/60):'ex. 32:30 ou 32,5';
+  $('swst').textContent=out?wm[out]:inp.length===1?'Encore un champ à remplir…':'Remplis deux champs, le troisième se calcule.';
+}
+function wedit(k){
+  const r=String(Wf[k].value);
+  wv[k]=k==='d'?dec(r.replace(/\s/g,'')):sec(clock(r));
+  wo=wo.filter(o=>o!==k);if(wv[k]!=null)wo.unshift(k);wo.length=Math.min(wo.length,3);wcalc(k);
+}
+for(const k in Wf)Wf[k].addEventListener('input',()=>wedit(k));
+document.querySelectorAll('.chip[data-m]').forEach(b=>b.addEventListener('click',()=>{Wf.d.value=b.dataset.m;wedit('d')}));
+$('swrs').addEventListener('click',()=>{wo=[];wv={d:null,t:null,r:null};for(const k in Wf)Wf[k].value='';wcalc(null)});
+
+const tabs=[...document.querySelectorAll('.tab')];
+function show(id){tabs.forEach(t=>{const on=t.dataset.t===id;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;$('p-'+t.dataset.t).hidden=!on});$('ft').hidden=id!=='run'}
+tabs.forEach((t,i)=>{t.addEventListener('click',()=>show(t.dataset.t));t.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];n.focus();show(n.dataset.t)})});
+</script>
+</body>
+</html>
