@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Allure, le calculateur de course</title>
+<title>Allure, calculateurs de course, vélo et natation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%232338ff'/><text x='50%' y='55%' dominant-baseline='central' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-weight='800' font-size='320'>A</text></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%232338ff'/><text x='50%' y='55%' dominant-baseline='central' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-weight='800' font-size='320'>A</text></svg>">
-<meta name="description" content="Calcule ton temps, ton allure (min/km), ta vitesse (km/h) ou ta distance en renseignant deux valeurs.">
+<meta name="description" content="Calcule ton temps, ton allure, ta vitesse ou ta distance en course et en natation, tes watts par kilo et la pression de tes pneus de vélo.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@ h1{font:800 clamp(1.9rem,5.2vw,2.9rem)/1 var(--d);margin:16px 0 6px}
 .f.calc{background:var(--hi);color:var(--hk)}
 .f.calc:focus-within{box-shadow:inset 0 0 0 3px var(--hk)}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px}
-label{font-weight:700;font-size:.92rem}
+label,.lb{font-weight:700;font-size:.92rem}
 label span{font-weight:500;opacity:.75;margin-left:4px}
 .tag{display:none;font-style:normal;font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 9px}
 .f.calc .tag{display:inline-block;background:var(--hk);color:var(--hi)}
@@ -60,7 +60,7 @@ input::placeholder{color:currentColor;opacity:.3}
 .val input{flex:1 1 5ch;min-width:5ch}
 .adj{flex:none;font:700 1.35rem/1 var(--d);font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap}
 .temp{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:9px 18px;border-top:1px solid var(--pl)}
-.temp label{flex:none}
+.temp label,.temp .lb{flex:none}
 .tin{flex:none;width:4.6ch;font-size:1.6rem}
 input[type=range]{flex:1 1 160px;min-width:0;width:auto;height:28px;padding:0;font:inherit;accent-color:var(--hi);cursor:pointer}
 .temp p{flex-basis:100%;margin:0;font-size:.8rem;color:var(--pm)}
@@ -95,6 +95,9 @@ tfoot td{font-weight:700;border-top:2px solid var(--ink)}
 .pill{font:700 .75rem var(--b);border-radius:999px;padding:3px 11px;border:1px solid var(--line);color:var(--mut)}
 .pill.up{background:var(--hi);color:var(--hk);border-color:transparent}
 .pill.dn{background:var(--pn);color:var(--pk);border-color:transparent}
+[hidden]{display:none!important}
+.big{display:block;font:800 clamp(2rem,8vw,3.1rem)/1.1 var(--d);font-variant-numeric:tabular-nums;padding:4px 0 2px}
+.big small{font:700 1.2rem var(--d);margin-left:6px;opacity:.8}
 </style>
 </head>
 <body>
@@ -163,7 +166,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--ink)}
       <div class="f" id="gzone"><div class="top"><label for="gf">Fichier GPX</label></div>
         <input id="gf" class="vh" type="file" accept=".gpx,application/gpx+xml,text/xml"><label class="ghost" for="gf">Choisir un fichier</label><div class="sub" id="gn">ou dépose-le ici</div></div>
     </div>
-    <div class="temp"><label id="gdl">Détail</label>
+    <div class="temp"><span class="lb" id="gdl">Détail</span>
       <div class="dir" role="group" aria-labelledby="gdl">
         <button class="chip" type="button" data-th="fin" aria-pressed="false">Fin</button>
         <button class="chip" type="button" data-th="moyen" aria-pressed="true">Moyen</button>
@@ -203,6 +206,38 @@ tfoot td{font-weight:700;border-top:2px solid var(--ink)}
   <div class="bar"><p id="qst" aria-live="polite">Remplis deux champs, le troisième se calcule.</p><button class="ghost" id="qrs" type="button">Effacer</button></div>
 </section>
 <footer>Calcul : W/kg = puissance (W) ÷ poids (kg). Pour comparer tes sorties dans le temps, garde toujours la même façon de te peser.</footer>
+<section id="tp">
+  <h2>La bonne pression pour tes pneus</h2>
+  <p class="lead">Poids, pneu, jante et terrain : on calcule la pression avant et arrière, à gonfler à froid.</p>
+  <div class="panel" id="tpp" aria-label="Calculateur de pression de pneus">
+    <div class="chips" id="tg-t" role="group" aria-label="Type de vélo"></div>
+    <div class="grid">
+      <div class="f"><div class="top"><label for="tpw">Cycliste<span>kg</span></label></div>
+        <input id="tpw" inputmode="decimal" autocomplete="off" placeholder="75"><div class="sub">ex. 72,5</div></div>
+      <div class="f"><div class="top"><label for="tpb">Vélo et équipement<span>kg</span></label></div>
+        <input id="tpb" inputmode="decimal" autocomplete="off" placeholder="9"><div class="sub">bidons, sac et outils compris</div></div>
+      <div class="f"><div class="top"><label for="tpt">Pneu<span>mm</span></label></div>
+        <input id="tpt" inputmode="decimal" autocomplete="off" placeholder="28"><div class="sub">en VTT, les pouces marchent : 2,4</div></div>
+      <div class="f"><div class="top"><label for="tpr">Jante<span>mm</span></label></div>
+        <input id="tpr" inputmode="decimal" autocomplete="off" placeholder="21"><div class="sub">largeur interne, facultatif</div></div>
+    </div>
+    <div class="temp"><span class="lb" id="tpl-w">Largeurs courantes</span><div class="dir" id="tg-w" role="group" aria-labelledby="tpl-w"></div></div>
+    <div class="grid">
+      <div class="f" id="tfb"><div class="top"><span class="lb">Avant</span></div><output class="big" id="tfo">–</output><div class="sub" id="tfs"></div></div>
+      <div class="f" id="trb"><div class="top"><span class="lb">Arrière</span></div><output class="big" id="tro">–</output><div class="sub" id="trs"></div></div>
+    </div>
+    <div class="temp"><span class="lb" id="tpl-m">Montage</span><div class="dir" id="tg-m" role="group" aria-labelledby="tpl-m"></div></div>
+    <div class="temp"><span class="lb" id="tpl-s">Terrain</span><div class="dir" id="tg-s" role="group" aria-labelledby="tpl-s"></div></div>
+    <div class="temp"><span class="lb" id="tpl-c">Sol</span><div class="dir" id="tg-c" role="group" aria-labelledby="tpl-c"></div>
+      <span class="lb" id="tpl-h">Jante</span><div class="dir" id="tg-h" role="group" aria-labelledby="tpl-h"></div></div>
+    <div class="temp"><label for="tpm">Pression max<span>bar</span></label>
+      <input id="tpm" class="tin" inputmode="decimal" autocomplete="off" placeholder="–">
+      <p>Facultatif : la plus basse des valeurs gravées sur le pneu et sur la jante. Le résultat ne la dépasse jamais. Un nombre en psi est converti tout seul.</p></div>
+    <div class="temp" id="tpn" hidden></div>
+    <div class="bar"><p id="tst" aria-live="polite">Indique ton poids et la largeur de ton pneu.</p><button class="ghost" id="tpx" type="button">Effacer</button></div>
+  </div>
+</section>
+<footer>Méthode : la pression suit la charge portée par chaque roue et baisse quand le pneu ou la jante s’élargit, pour que le pneu s’écrase de façon comparable quel que soit le poids. Les coefficients de montage, de terrain et de sol sont recoupés avec des valeurs publiques de SRAM/Zipp, Silca et ENVE : prends le résultat comme point de départ et ajuste par pas de 0,1 bar selon tes sensations. Gonfle à froid : 10 °C de plus dans l’air ajoutent environ 0,15 à 0,2 bar. Ne dépasse jamais la pression maximale gravée sur le pneu ou la jante ; les jantes sans crochet sont limitées à 5 bar pour les pneus de 25 à 29 mm et à 4,5 bar de 30 à 34 mm.</footer>
 </div>
 <div id="p-sw" role="tabpanel" aria-labelledby="tb-sw" hidden>
 <h1>Ton rythme au 100 mètres.</h1>
@@ -254,7 +289,7 @@ const clk=m=>{let s=Math.round(m*60);const h=Math.floor(s/3600);s%=3600;return(h
 const words=m=>{let s=Math.round(m*60);const h=Math.floor(s/3600);s%=3600;return(h?h+' h ':'')+Math.floor(s/60)+' min '+pad(s%60)+' s'};
 let RATE=null,TIME=null;
 const PTS=[[-10,2],[-5,1],[0,.5],[5,0],[12,0],[15,.5],[18,2],[21,4],[24,6.5],[27,10],[30,16],[35,25],[40,35]];
-const slow=c=>{if(c<=PTS[0][0])return PTS[0][1];for(let i=1;i<PTS.length;i++){const[a,x]=PTS[i-1],[b,y]=PTS[i];if(c<=b)return x+(y-x)*(c-a)/(b-a)}return PTS[PTS.length-1][1]};
+const lerp=(T,c)=>{if(c<=T[0][0])return T[0][1];for(let i=1;i<T.length;i++){const[a,x]=T[i-1],[b,y]=T[i];if(c<=b)return x+(y-x)*(c-a)/(b-a)}return T[T.length-1][1]},slow=c=>lerp(PTS,c);
 const temp=()=>{const x=String($('c').value).trim().replace(',','.');return /^-?\d+(\.\d+)?$/.test(x)?+x:null};
 let DIR='face';
 const dirTxt={face:'vent de face',dos:'vent de dos',boucle:'vent en aller-retour'};
@@ -374,7 +409,7 @@ function gparse(txt){
   let p=[...d.getElementsByTagName('trkpt')];if(!p.length)p=[...d.getElementsByTagName('rtept')];
   const L=[],E=[];let last=null,ok=0;
   for(const q of p){
-    const la=+q.getAttribute('lat'),lo=+q.getAttribute('lon'),e=q.getElementsByTagName('ele')[0];
+    const la=parseFloat(q.getAttribute('lat')),lo=parseFloat(q.getAttribute('lon')),e=q.getElementsByTagName('ele')[0];
     if(!isFinite(la)||!isFinite(lo))continue;
     let z=e?parseFloat(e.textContent):NaN;if(isFinite(z)){ok++;last=z}else z=last;
     L.push([la,lo]);E.push(z);
@@ -435,13 +470,73 @@ async function gload(file){
   grender();
 }
 gpi.addEventListener('input',grender);
-$('gf').addEventListener('change',e=>gload(e.target.files[0]));
+$('gf').addEventListener('change',async e=>{await gload(e.target.files[0]);e.target.value=''});
 $('gu').addEventListener('click',()=>{if(!RATE){gMsg('Remplis d’abord deux champs du calculateur plus haut.');return}gpi.value=fmt.p(RATE);grender()});
 document.querySelectorAll('.chip[data-th]').forEach(b=>b.addEventListener('click',()=>{gth=TH[b.dataset.th];document.querySelectorAll('.chip[data-th]').forEach(o=>o.setAttribute('aria-pressed',o===b));grender()}));
 ['dragover','dragenter'].forEach(t=>gzone.addEventListener(t,e=>{e.preventDefault();gzone.classList.add('drag')}));
 ['dragleave','drop'].forEach(t=>gzone.addEventListener(t,e=>{e.preventDefault();gzone.classList.remove('drag')}));
 gzone.addEventListener('drop',e=>gload(e.dataTransfer.files[0]));
+['dragover','drop'].forEach(t=>window.addEventListener(t,e=>e.preventDefault()));
 $('grs').addEventListener('click',()=>{GS={z:null};gpi.value='';$('gf').value='';$('gn').textContent='ou dépose-le ici';grender()});
+
+/* Pression des pneus : pression = coefficient × charge par roue ÷ (largeur réelle du pneu)^1,5, puis montage, terrain et sol */
+const RIM=[[23,15],[25,17],[28,19],[32,21],[38,22.5],[45,25],[50,25],[57,27],[66,30]],rref=w=>lerp(RIM,w),KP=17.4;
+const TT={
+  route:{n:'Route',ff:48,bk:9,d:1,fl:[2.2,2.8],w:[25,28,30,32],s:[['Asphalte lisse',1],['Route standard',.95],['Route abîmée',.88],['Pavés',.84]]},
+  gravel:{n:'Gravel',ff:47,bk:10,d:1,fl:[1.2,1.7],w:[35,38,40,45],s:[['Asphalte',.97],['Gravel roulant',.87],['Gravel mixte',.8],['Gravel technique',.73]]},
+  vtt:{n:'VTT',ff:46.5,bk:13,d:1,fl:[.8,1.3],w:[57,61,66],s:[['Cross-country',.95],['Trail',.88],['Enduro',.84]]},
+  ville:{n:'Ville',ff:47,bk:15,d:0,fl:[2,2.4],w:[32,37,40,47],s:[['Asphalte',1],['Chemin et pavés',.88]]}
+},TM={chambre:['Chambre',1],latex:['Latex',.97],tubeless:['Tubeless',.94],boyau:['Boyau',.96]},TP={t:'route',m:'chambre',s:1,wet:0,hk:0};
+const fb=p=>{const d=p<2?2:1;return p.toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d})},fp=p=>f(p*14.5038,0);
+const tcur=g=>({t:TP.t,w:dec($('tpt').value),m:TP.m,s:TP.s,c:TP.wet,h:TP.hk})[g];
+function tbuild(gs){
+  const T=TT[TP.t],L={t:Object.entries(TT).map(([k,v])=>[k,v.n]),w:T.w.map(x=>[x,x+' mm']),m:Object.entries(TM).map(([k,v])=>[k,v[0]]),s:T.s.map((s,i)=>[i,s[0]]),c:[[0,'Sec'],[1,'Humide']],h:[[0,'À crochet'],[1,'Sans crochet']]};
+  for(const g of gs)$('tg-'+g).innerHTML=L[g].map(([k,l])=>`<button class="chip" type="button" data-g="${g}" data-k="${k}">${l}</button>`).join('');
+}
+function trender(){document.querySelectorAll('#tpp button[data-g]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k==tcur(x.dataset.g)));tcalc()}
+function tcalc(){
+  const T=TT[TP.t],val=i=>$(i).value.trim(),rd=dec(val('tpw')),bkv=val('tpb'),bk=bkv?dec(bkv):T.bk,rrv=val('tpr'),ri=rrv?dec(rrv):null,mv=val('tpm');
+  let w=dec(val('tpt')),mx=mv?dec(mv):null;
+  if(w&&w<7)w*=25.4;
+  if(mx>16)mx/=14.5038;
+  const miss=!val('tpw')||!val('tpt'),
+    err=miss?'':!rd||rd<30||rd>200?'Poids du cycliste : entre 30 et 200 kg.':!bk||bk<3||bk>60?'Poids du vélo : entre 3 et 60 kg.':!w||w<20||w>80?'Largeur du pneu : entre 20 et 80 mm, ou 0,8 à 3 pouces.':rrv&&(!ri||ri<12||ri>45)?'Largeur de jante : entre 12 et 45 mm.':mv&&(!mx||mx<.8)?'Pression maximale : un nombre en bar ou en psi.':'',
+    ok=!miss&&!err,tips=[];
+  let pf=0,pr=0;
+  if(ok){
+    const r0=rref(w),we=Math.max(.9*w,Math.min(1.15*w,w+.35*((ri||r0)-r0))),
+      k=KP*TM[TP.m][1]*T.s[TP.s][1]*(TP.wet?.92:1)/we**1.5*(rd+bk),
+      nohook=TP.m==='boyau'||!TP.hk,hl=nohook?99:w<=29?5:w<=34?4.5:99,cap=Math.min(hl,mx||99),
+      flo=T.fl[TP.m==='chambre'||TP.m==='latex'?1:0],fix=p=>Math.min(cap,Math.max(flo,p)),
+      raw=[k*T.ff/100,k*(1-T.ff/100)];
+    pf=fix(raw[0]);pr=fix(raw[1]);
+    if(raw[1]>cap)tips.push(`Plafonné à ${fb(cap)} bar (${mx&&mx<=hl?'ta pression maximale':'limite des jantes sans crochet'}) alors que ton poids en demanderait environ ${fb(raw[1])} : un pneu plus large permet de rester sous la limite.`);
+    else if(raw[0]<flo)tips.push(`Remonté à ${fb(flo)} bar : en dessous, ${TP.m==='tubeless'?'le pneu risque de déjanter':'la chambre risque de pincer'}.`);
+    if(ri&&ri>=w-3)tips.push('Jante très large pour ce pneu : vérifie la compatibilité (tableau ETRTO ou fabricant).');
+    if(!nohook&&hl===99&&!mx)tips.push('Jante sans crochet : respecte la pression maximale gravée sur la jante et saisis-la dans le champ Pression max.');
+  }
+  for(const[c,p]of[['f',pf],['r',pr]]){
+    $('t'+c+'b').classList.toggle('calc',ok);
+    $('t'+c+'o').innerHTML=ok?`${fb(p)}<small>bar</small>`:'–';
+    $('t'+c+'s').textContent=ok?`≈ ${fp(p)} psi, plage ${fb(p*.95)} à ${fb(p*1.05)} bar`:'';
+  }
+  $('tpn').hidden=!tips.length;$('tpn').innerHTML=tips.map(m=>`<p>${m}</p>`).join('');
+  $('tst').textContent=err||(miss?'Indique ton poids et la largeur de ton pneu.':`Calculé pour un pneu de ${f(w,0)} mm et ${f(rd+bk,0)} kg au total.`);
+}
+$('tpp').addEventListener('click',e=>{
+  const x=e.target.closest('button[data-g]');if(!x)return;
+  const{g,k}=x.dataset;
+  if(g==='t'){TP.t=k;TP.s=TT[k].d;$('tpb').placeholder=TT[k].bk;$('tpt').placeholder=TT[k].w[1];tbuild(['w','s'])}
+  else if(g==='w')$('tpt').value=k;
+  else if(g==='m')TP.m=k;
+  else if(g==='s')TP.s=+k;
+  else if(g==='c')TP.wet=+k;
+  else TP.hk=+k;
+  trender();
+});
+['tpw','tpb','tpt','tpr','tpm'].forEach(i=>$(i).addEventListener('input',trender));
+$('tpx').addEventListener('click',()=>{['tpw','tpb','tpt','tpr','tpm'].forEach(i=>$(i).value='');trender()});
+tbuild([...'twmsch']);trender();
 
 const tabs=[...document.querySelectorAll('.tab')];
 function show(id){tabs.forEach(t=>{const on=t.dataset.t===id;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;$('p-'+t.dataset.t).hidden=!on});$('ft').hidden=id!=='run'}
